@@ -432,6 +432,8 @@ class Context(object):
     self._enable_mlir_bridge = None
     self._optimizer_experimental_options = {}
 
+    self.remote_job = ""
+
     _python_eager_context_create_counter.get_cell().increase_by(1)
   # pylint: enable=redefined-outer-name
 
@@ -478,11 +480,13 @@ class Context(object):
         # configured and thus clear the job, replica & task.
         if spec.job == "localhost":
           spec = spec.replace(job=None, replica=None, task=None)
-        logical_devices.append(
-            LogicalDevice(name=spec.to_string(), device_type=spec.device_type))
-        dev_type = pywrap_tfe.TF_DeviceListType(device_list, i)
-        if dev_type == "GPU":
-          self._num_gpus += 1
+        name = spec.to_string()
+        if 'CPU' in spec.device_type or self.remote_job in name:
+          logical_devices.append(
+              LogicalDevice(name=spec.to_string(), device_type=spec.device_type))
+          dev_type = pywrap_tfe.TF_DeviceListType(device_list, i)
+          if dev_type == "GPU":
+            self._num_gpus += 1
 
     finally:
       self._logical_devices = logical_devices
@@ -602,6 +606,9 @@ class Context(object):
       self._initialize_logical_devices()
 
     self._clear_caches()
+
+  def update_remote_job(self, job_name):
+    self.remote_job = job_name
 
   def check_alive(self, worker_name):
     """Checks whether a remote worker is alive or not.
