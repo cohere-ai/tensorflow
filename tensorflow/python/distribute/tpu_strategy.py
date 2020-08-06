@@ -116,7 +116,8 @@ class TPUStrategy(distribute_lib.Strategy):
 
   def __init__(self,
                tpu_cluster_resolver=None,
-               device_assignment=None):
+               device_assignment=None,
+               job_name=""):
     """Synchronous training in TPU donuts or Pods.
 
     To construct a TPUStrategy object, you need to run the
@@ -149,7 +150,7 @@ class TPUStrategy(distribute_lib.Strategy):
         supports the usecase of using a single core within a TPU cluster.
     """
     super(TPUStrategy, self).__init__(TPUExtended(
-        self, tpu_cluster_resolver, device_assignment=device_assignment))
+        self, tpu_cluster_resolver, device_assignment=device_assignment, job_name=job_name))
     distribute_lib.distribution_strategy_gauge.get_cell("V2").set("TPUStrategy")
     distribute_lib.distribution_strategy_replica_gauge.get_cell(
         "num_workers").set(self.extended.num_hosts)
@@ -181,7 +182,8 @@ class TPUStrategyV1(distribute_lib.StrategyV1):
   def __init__(self,
                tpu_cluster_resolver=None,
                steps_per_run=None,
-               device_assignment=None):
+               device_assignment=None,
+               job_name=""):
     """Initializes the TPUStrategy object.
 
     Args:
@@ -197,7 +199,7 @@ class TPUStrategyV1(distribute_lib.StrategyV1):
           supports the usecase of using a single core within a TPU cluster.
     """
     super(TPUStrategyV1, self).__init__(TPUExtended(
-        self, tpu_cluster_resolver, steps_per_run, device_assignment))
+        self, tpu_cluster_resolver, steps_per_run, device_assignment, job_name))
     distribute_lib.distribution_strategy_gauge.get_cell("V1").set("TPUStrategy")
     distribute_lib.distribution_strategy_replica_gauge.get_cell(
         "num_workers").set(self.extended.num_hosts)
@@ -278,7 +280,8 @@ class TPUExtended(distribute_lib.StrategyExtendedV1):
                container_strategy,
                tpu_cluster_resolver=None,
                steps_per_run=None,
-               device_assignment=None):
+               device_assignment=None,
+               job_name=""):
     super(TPUExtended, self).__init__(container_strategy)
 
     if tpu_cluster_resolver is None:
@@ -303,7 +306,7 @@ class TPUExtended(distribute_lib.StrategyExtendedV1):
       self._tpu_devices = np.array(
           [[d] for d in tpu_devices_flat], dtype=object)
     else:
-      job_name = device_spec.DeviceSpecV2.from_string(tpu_devices_flat[0]).job
+      job_name = job_name or device_spec.DeviceSpecV2.from_string(tpu_devices_flat[0]).job
 
       tpu_devices = []
       for replica_id in range(device_assignment.num_replicas):
