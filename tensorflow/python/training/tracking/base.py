@@ -304,7 +304,10 @@ class CheckpointPosition(object):
               dtypes=[base_type],
               name="%s_checkpoint_read" % (serialized_tensor.name,))
         # Copy the value to the current device if necessary.
-        value_tensors[serialized_tensor.name] = array_ops.identity(value)
+        try:
+          value_tensors[serialized_tensor.name] = array_ops.identity(value)
+        except:
+          value_tensors[serialized_tensor.name] = value
       return value_tensors
 
   def gather_ops_or_named_saveables(self):
